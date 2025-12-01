@@ -3,9 +3,6 @@ return {
     "rmagatti/auto-session",
   },
   {
-    "github.com/copilot.vim"
-  },
-  {
     "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
