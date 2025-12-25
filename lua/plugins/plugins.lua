@@ -1,6 +1,12 @@
 return {
   {
     "rmagatti/auto-session",
+    config =  function()
+      require("auto-session").setup {
+        log_level = "error",
+        auto_session_suppress_dirs = { "~/", "~/Projects", "~/Downloads", "/" },
+      }
+    end
   },
   {
     "folke/tokyonight.nvim",
@@ -9,7 +15,7 @@ return {
     opts = {},
   },
   {
-    "nvim-telescope/telescope.nvim", 
+    "nvim-telescope/telescope.nvim",
     tag = "v0.1.9",
     dependencies = {
       'nvim-lua/plenary.nvim',
