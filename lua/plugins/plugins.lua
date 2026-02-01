@@ -36,7 +36,7 @@ return {
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup {
-        ensure_installed = { "lua", "python", "javascript", "typescript", "tsx", "html", "css", "json", "bash" },
+        ensure_installed = { "lua", "python", "javascript", "typescript", "tsx", "html", "css", "json", "bash", "c_sharp" },
         highlight = {
           enable = true,
           indent = {
