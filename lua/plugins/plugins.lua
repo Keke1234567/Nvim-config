@@ -9,12 +9,6 @@ return {
     end
   },
   {
-    "folke/tokyonight.nvim",
-    lazy = false,
-    priority = 1000,
-    opts = {},
-  },
-  {
     "nvim-telescope/telescope.nvim",
     tag = "v0.1.9",
     dependencies = {
@@ -35,16 +29,13 @@ return {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
     config = function()
-      require("nvim-treesitter.configs").setup {
-        ensure_installed = { "lua", "python", "javascript", "typescript", "tsx", "html", "css", "json", "bash", "c_sharp" },
-        highlight = {
-          enable = true,
-          indent = {
-            enable = true,
-          },
-        },
-      }
-    end
+      require("nvim-treesitter").setup()
+    end,
+    opts = {
+      ensure_installed = { "lua", "python", "javascript", "typescript", "tsx", "html", "css", "json", "bash", "c_sharp" },
+      highlight = { enable = true },
+      indent = { enable = true },
+    },
   },
   {
     "nvim-neo-tree/neo-tree.nvim",
@@ -55,6 +46,10 @@ return {
       "nvim-tree/nvim-web-devicons",
     },
     lazy = false,
+    init = function()
+      vim.g.loaded_netrw = 1
+      vim.g.loaded_netrwPlugin = 1
+    end
   }
 }
 
