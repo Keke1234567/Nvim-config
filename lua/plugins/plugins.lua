@@ -5,6 +5,7 @@ return {
       require("auto-session").setup {
         log_level = "error",
         auto_session_suppress_dirs = { "~/", "~/Projects", "~/Downloads", "/" },
+        pre_save_cmds = { "Neotree close" },
       }
     end
   },
@@ -26,16 +27,15 @@ return {
     end
   },
   {
-    "nvim-treesitter/nvim-treesitter",
-    build = ":TSUpdate",
-    config = function()
-      require("nvim-treesitter").setup()
-    end,
-    opts = {
-      ensure_installed = { "lua", "python", "javascript", "typescript", "tsx", "html", "css", "json", "bash", "c_sharp" },
-      highlight = { enable = true },
-      indent = { enable = true },
-    },
+    "neovim-treesitter/nvim-treesitter",
+    dependencies = { 'neovim-treesitter/treesitter-parser-registry' },
+    lazy = false,
+    build = ':TSUpdate',
+  },
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    opts = {},
   },
   {
     "nvim-neo-tree/neo-tree.nvim",
@@ -49,7 +49,19 @@ return {
     init = function()
       vim.g.loaded_netrw = 1
       vim.g.loaded_netrwPlugin = 1
-    end
+    end,
+    config = function()
+      require("neo-tree").setup({
+        filesystem = {
+          filtered_items = {
+            visible = true,
+            hide_dotfiles = false,
+            hide_gitignored = false,
+          },
+        },
+      })
+      vim.keymap.set("n", "<leader>e", ":Neotree toggle<CR>", { silent = true })
+    end,
   }
 }
 
