@@ -1,20 +1,17 @@
 return {
   {
     "williamboman/mason.nvim",
-    opts = {
-      ensure_installed = {
-        "lua-language-server",
-        "typescript-language-server",
-        "csharpier",
-        "netcoredbg",
-        "fantomas",
-      },
-    },
+    opts = {},
   },
   {
     "williamboman/mason-lspconfig.nvim",
     opts = {
-      ensure_installed = { "lua_ls" },
+      -- lspconfig server names, not Mason package names
+      ensure_installed = {
+        "lua_ls",
+        "ts_ls",
+        "omnisharp",
+      },
     },
     dependencies = {
       { "williamboman/mason.nvim", opts = {} },
@@ -34,10 +31,24 @@ return {
         }
       })
 
-      vim.lsp.config("ts_ls", {})
+      vim.lsp.enable('tsserver', {
+        cmd = {'typescript-language-server', '--stdio'},
+        filetypes = { 'typescript' },
+      })
 
       vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "LSP Hover" })
       vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "LSP Go to Definition" })
+
+      -- Diagnostics: read the full error in a proper float.
+      vim.diagnostic.config({
+        virtual_text = true,
+        underline = true,
+        severity_sort = true,
+        float = { border = "rounded", source = true },
+      })
+      vim.keymap.set("n", "gl", vim.diagnostic.open_float, { desc = "Show line diagnostics" })
+      vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, { desc = "Next diagnostic" })
+      vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, { desc = "Prev diagnostic" })
     end,
     opts = {
       servers = {
@@ -69,5 +80,5 @@ return {
       "neovim/nvim-lspconfig",
       "williamboman/mason.nvim",
     },
-  },
+  }
 }
