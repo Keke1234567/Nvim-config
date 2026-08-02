@@ -36,6 +36,28 @@ return {
         filetypes = { 'typescript' },
       })
 
+      -- Godot's LSP is served *by the Godot editor itself* on TCP :6005. The
+      -- built-in gdscript config hardcodes 127.0.0.1, which does NOT reach
+      -- the Windows host from WSL (loopback isn't mirrored — see the
+      -- wsl-lmstudio-networking memory). Redirect the connect target to the
+      -- mirrored Windows LAN IP so nvim can actually talk to the running
+      -- editor.
+      --
+      -- Requires on the Windows side, once, per project:
+      --   * Godot editor running with the project open.
+      --   * Editor Settings → Network → Language Server → Remote Host = "*"
+      --     (default is 127.0.0.1, which only serves Windows loopback).
+      --   * Windows firewall: allow inbound TCP 6005 for Godot.exe
+      --     (`New-NetFirewallRule -DisplayName "Godot LSP" -Direction Inbound
+      --     -Action Allow -Protocol TCP -LocalPort 6005 -Program "C:\path\to\Godot.exe"`).
+      --
+      -- If Godot isn't running / not reachable, the LSP client just fails to
+      -- attach silently; snippets + buffer completion still work.
+      local gd_port = tonumber(os.getenv("GDScript_Port")) or 6005
+      vim.lsp.config('gdscript', {
+        cmd = vim.lsp.rpc.connect(require("util.wsl_host").ip(), gd_port),
+      })
+      vim.lsp.enable('gdscript')
       vim.keymap.set("n", "K", vim.lsp.buf.hover, { desc = "LSP Hover" })
       vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "LSP Go to Definition" })
 

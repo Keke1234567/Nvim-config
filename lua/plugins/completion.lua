@@ -26,16 +26,33 @@ return {
     -- `cargo build` step is needed on install.
     version = "*",
     event = "InsertEnter",
+    dependencies = {
+      -- Snippet engine. blink's `snippets` source needs an engine to expand
+      -- placeholders ($1, ${1:foo}, $0) — without one, snippet items insert
+      -- as plain text. LuaSnip also loads VSCode-format snippet packs.
+      "L3MON4D3/LuaSnip",
+      -- Community snippet collection (VSCode format). Ships per-filetype
+      -- packs including gdscript/, so .gd files get func/for/match/signal
+      -- scaffolding once `from_vscode` lazy-loads them below.
+      "rafamadriz/friendly-snippets",
+    },
     opts = {
       keymap = {
         preset = "default",
         ['<S-CR>'] = { 'accept', 'fallback' },
         ['<C-CR>'] = { 'accept', 'fallback' },
+        -- Blink's "default" preset previews the highlighted item by inserting
+        -- it into the buffer as you navigate (auto_insert). Plain <Esc> just
+        -- hides the menu, leaving the preview text behind — feels like an
+        -- accidental accept. `cancel` restores the pre-selection text; chain
+        -- `fallback` so Escape still exits insert mode when the menu is closed.
+        ['<Esc>'] = { 'cancel', 'fallback' },
       },
       completion = {
         menu = { auto_show = true },
         documentation = { auto_show = true, auto_show_delay_ms = 200 },
       },
+      snippets = { preset = "luasnip" },
       sources = {
         default = { "lsp", "path", "snippets", "buffer" },
       },
@@ -44,5 +61,12 @@ return {
       signature = { enabled = true },
     },
     opts_extend = { "sources.default" },
+    config = function(_, opts)
+      -- friendly-snippets ships VSCode-format packs; LuaSnip needs to be
+      -- told to scan its runtimepath for them. lazy_load defers parsing
+      -- until a buffer of the matching filetype is opened.
+      require("luasnip.loaders.from_vscode").lazy_load()
+      require("blink.cmp").setup(opts)
+    end,
   },
 }

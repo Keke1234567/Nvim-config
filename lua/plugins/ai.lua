@@ -24,26 +24,8 @@
 --   <A-[>    previous suggestion
 --   <A-e>    dismiss
 
--- Primary LAN IPv4 of this machine = the mirrored Windows host IP that
--- LM Studio is reachable on. Prefer RFC1918 LAN ranges; skip loopback,
--- link-local, and (likely) docker bridges. Hardcoded fallback last.
--- Returns the scheme+host+port only; callers append the API path.
 local function lm_studio_url()
-  local uv = vim.uv or vim.loop
-  local lan, any
-  for _, addrs in pairs(uv.interface_addresses()) do
-    for _, a in ipairs(addrs) do
-      if a.family == "inet" and not a.internal
-        and not a.ip:match("^169%.254%.") then
-        any = any or a.ip
-        if a.ip:match("^192%.168%.") or a.ip:match("^10%.") then
-          lan = lan or a.ip
-        end
-      end
-    end
-  end
-  local ip = lan or any or "192.168.50.187"
-  return ("http://%s:1234"):format(ip)
+  return ("http://%s:1234"):format(require("util.wsl_host").ip())
 end
 
 return {
@@ -157,13 +139,52 @@ return {
         return orig_trim(item, opts) -- re-trim blank lines a fence left behind
       end
 
-      -- Buffers already open when minuet loads (or on :Lazy reload) missed
-      -- the FileType autocmd that arms auto-trigger; enable it for them.
-      for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-        if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" then
-          vim.b[buf].minuet_virtual_text_auto_trigger = true
+      -- Global on/off state. minuet's own toggle is buffer-local
+      -- (`vim.b.minuet_virtual_text_auto_trigger`), which means flipping it
+      -- off in one file leaves it on in the next buffer you open. That's
+      -- annoying for a "shut up" switch — track intent globally and enforce
+      -- it on every current and future buffer. Off by default; <F2> arms it.
+      vim.g.minuet_enabled = false
+
+      local function apply_minuet_state()
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buftype == "" then
+            vim.b[buf].minuet_virtual_text_auto_trigger = vim.g.minuet_enabled
+          end
+        end
+        if not vim.g.minuet_enabled then
+          -- Kill any suggestion currently painted so the user isn't stuck
+          -- staring at ghost text after flipping off.
+          pcall(require("minuet.virtualtext").action.dismiss)
         end
       end
+
+      -- Arm the flag on every buffer that gets opened later. FileType is in
+      -- the list because minuet's own FileType autocmd (auto_trigger_ft =
+      -- "*") unconditionally sets the flag true; ours is registered after
+      -- minuet's setup() so it runs second on the same event and wins.
+      vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile", "FileType" }, {
+        callback = function(args)
+          if vim.bo[args.buf].buftype == "" then
+            vim.b[args.buf].minuet_virtual_text_auto_trigger = vim.g.minuet_enabled
+          end
+        end,
+      })
+
+      apply_minuet_state()
+
+      local function toggle_minuet()
+        vim.g.minuet_enabled = not vim.g.minuet_enabled
+        apply_minuet_state()
+        vim.notify("Minuet AI " .. (vim.g.minuet_enabled and "ON" or "OFF"),
+          vim.log.levels.INFO)
+      end
+
+      vim.api.nvim_create_user_command("MinuetToggle", toggle_minuet, {})
+      vim.keymap.set({ "n", "i" }, "<F2>", toggle_minuet,
+        { silent = true, desc = "Toggle minuet AI suggestions" })
+      vim.keymap.set("n", "<leader>ai", toggle_minuet,
+        { silent = true, desc = "Toggle minuet AI suggestions" })
 
       -- Smart <S-Tab>: accept the suggestion if one is shown, else a real Tab.
       vim.keymap.set("i", "<S-Tab>", function()
