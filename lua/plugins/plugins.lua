@@ -17,9 +17,20 @@ return {
       { 'nvim-telescope/telescope-fzf-native.nvim',  build = 'make' }
     },
     config = function()
+      local actions = require("telescope.actions")
       require("telescope").setup {
         defaults = {
           file_ignore_patterns = { "node_modules", "%.git/" },
+          mappings = {
+            i = {
+              ["<C-CR>"] = actions.select_vertical,
+              ["<S-CR>"] = actions.select_horizontal,
+            },
+            n = {
+              ["<C-CR>"] = actions.select_vertical,
+              ["<S-CR>"] = actions.select_horizontal,
+            },
+          },
         },
       }
       vim.keymap.set("n", "<C-p>", require("telescope.builtin").find_files)

@@ -107,6 +107,29 @@ return {
         virtualtext = {
           -- Copilot-style: auto-suggest in every filetype.
           auto_trigger_ft = { "*" },
+          -- ...except plugin UIs. auto_trigger_ft = "*" makes minuet's own
+          -- FileType autocmd set the trigger flag on *every* buffer, including
+          -- prompt/scratch buffers. The global toggle below can't undo that:
+          -- it only touches `buftype == ""` buffers, and these are "prompt"/
+          -- "nofile". Result was a completion request per keystroke in the
+          -- Telescope prompt ("Request failed with exit code 7" when LM Studio
+          -- is down, plus a stall while curl is spawned). Ignore them here —
+          -- there's nothing to infill in a picker query anyway.
+          auto_trigger_ignore_ft = {
+            "TelescopePrompt",
+            "TelescopeResults",
+            "neo-tree",
+            "neo-tree-popup",
+            "harpoon",
+            "dap-repl",
+            "dapui_watches",
+            "dapui_hover",
+            "lazy",
+            "mason",
+            "checkhealth",
+            "help",
+            "qf",
+          },
           keymap = {
             -- accept is handled by the smart <S-Tab> map below (minuet's
             -- accept keymap has no no-suggestion fallback).
@@ -182,8 +205,6 @@ return {
 
       vim.api.nvim_create_user_command("MinuetToggle", toggle_minuet, {})
       vim.keymap.set({ "n", "i" }, "<F2>", toggle_minuet,
-        { silent = true, desc = "Toggle minuet AI suggestions" })
-      vim.keymap.set("n", "<leader>ai", toggle_minuet,
         { silent = true, desc = "Toggle minuet AI suggestions" })
 
       -- Smart <S-Tab>: accept the suggestion if one is shown, else a real Tab.
