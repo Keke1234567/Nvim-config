@@ -47,6 +47,27 @@ return {
     dependencies = { 'neovim-treesitter/treesitter-parser-registry' },
     lazy = false,
     build = ':TSUpdate',
+    config = function()
+      -- Parsers to keep installed. c/lua/markdown/vim/vimdoc/query ship with
+      -- Neovim; everything else has to be built here. install() skips
+      -- languages already on disk, so this is cheap on startup and
+      -- self-healing on a fresh machine. Requires the tree-sitter CLI
+      -- (`npm i -g tree-sitter-cli`) and a C compiler to compile a parser.
+      require("nvim-treesitter").install({ "python" })
+
+      -- nvim-treesitter's `main` branch dropped the old highlight module, and
+      -- Neovim only auto-starts treesitter for the handful of filetypes whose
+      -- bundled ftplugin calls start() itself (lua, markdown, query, help).
+      -- Everything else — python included — stays on regex highlighting until
+      -- something starts it. pcall because start() throws for a filetype with
+      -- no parser installed, which is most of them.
+      vim.api.nvim_create_autocmd("FileType", {
+        group = vim.api.nvim_create_augroup("treesitter_start", { clear = true }),
+        callback = function(args)
+          pcall(vim.treesitter.start, args.buf)
+        end,
+      })
+    end,
   },
   {
     "folke/which-key.nvim",

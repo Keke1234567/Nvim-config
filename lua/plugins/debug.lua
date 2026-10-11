@@ -59,6 +59,44 @@ return {
     end,
   },
   {
+    -- Python debugging via debugpy. Two different interpreters are in play
+    -- and conflating them is the usual failure mode:
+    --   * the *adapter* interpreter — the one that has debugpy installed.
+    --     Mason keeps it in its own venv, so debugpy never has to be added to
+    --     a project's dependencies. Install once with `:MasonInstall debugpy`.
+    --   * the *program* interpreter — the one your script runs under.
+    --     dap-python resolves it per-session from $VIRTUAL_ENV or a
+    --     .venv/venv in the cwd, falling back to the adapter's python.
+    -- That's why a `pip install`ed library is importable at runtime without
+    -- debugpy being in the same env.
+    "mfussenegger/nvim-dap-python",
+    dependencies = { "mfussenegger/nvim-dap" },
+    ft = "python",
+    config = function()
+      local mason_debugpy = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
+      if not (vim.uv or vim.loop).fs_stat(mason_debugpy) then
+        -- Warn rather than fail silently: without this the adapter is
+        -- registered against a python with no debugpy and <F5> dies with an
+        -- opaque "No module named debugpy".
+        vim.notify("debugpy not found — run :MasonInstall debugpy", vim.log.levels.WARN)
+        mason_debugpy = vim.fn.exepath("python3")
+      end
+      local dap_python = require("dap-python")
+      dap_python.setup(mason_debugpy)
+
+      -- pytest by default; change to "unittest" or "django" if a project
+      -- needs it. Only affects the test_method/test_class helpers below.
+      dap_python.test_runner = "pytest"
+
+      vim.keymap.set("n", "<leader>dt", function() dap_python.test_method() end,
+        { desc = "DAP: debug nearest test" })
+      vim.keymap.set("n", "<leader>dT", function() dap_python.test_class() end,
+        { desc = "DAP: debug test class" })
+      vim.keymap.set("v", "<leader>ds", function() dap_python.debug_selection() end,
+        { desc = "DAP: debug selection" })
+    end,
+  },
+  {
     "mxsdev/nvim-dap-vscode-js",
     dependencies = { "mfussenegger/nvim-dap" },
     config = function()

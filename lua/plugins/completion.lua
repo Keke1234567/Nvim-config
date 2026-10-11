@@ -39,13 +39,9 @@ return {
     opts = {
       keymap = {
         preset = "default",
-        ['<S-CR>'] = { 'accept', 'fallback' },
-        ['<C-CR>'] = { 'accept', 'fallback' },
-        -- Blink's "default" preset previews the highlighted item by inserting
-        -- it into the buffer as you navigate (auto_insert). Plain <Esc> just
-        -- hides the menu, leaving the preview text behind — feels like an
-        -- accidental accept. `cancel` restores the pre-selection text; chain
-        -- `fallback` so Escape still exits insert mode when the menu is closed.
+        ['<Tab>'] = { 'select_next', 'snippet_forward', 'fallback' },
+        ['<S-Tab>'] = { 'select_prev', 'snippet_backward', 'fallback' },
+        ['<CR>'] = { 'accept', 'fallback' },
         ['<Esc>'] = { 'cancel', 'fallback' },
       },
       completion = {
@@ -62,6 +58,16 @@ return {
     },
     opts_extend = { "sources.default" },
     config = function(_, opts)
+      -- Leaving a snippet's region ends the session. LuaSnip's defaults set
+      -- neither of these, so an expansion you tab out of early (e.g. an LSP
+      -- function-call snippet whose param tabstops you never finished) stays
+      -- live indefinitely — and a later <Tab> anywhere in the buffer hits
+      -- `snippet_forward` above and teleports the cursor back into it.
+      require("luasnip").setup({
+        region_check_events = "CursorMoved,InsertEnter",
+        delete_check_events = "TextChanged,InsertLeave",
+      })
+
       -- friendly-snippets ships VSCode-format packs; LuaSnip needs to be
       -- told to scan its runtimepath for them. lazy_load defers parsing
       -- until a buffer of the matching filetype is opened.
